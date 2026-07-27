@@ -27,11 +27,15 @@ For example:
 
 Whether you're creating a new plugin or contributing to an existing one, start with:
 
-* Plugin Directory
+* [Plugin Directory](./plugin-directory.md)
 * Creating a Plugin
 * Plugin Requirements
-* Publishing a Plugin
+* [Publishing a Plugin](./docs/publishing.md)
 * Maintaining a Plugin
+
+## Publishing a plugin
+
+Plugins publish through the shared reusable workflow in this repository. For full setup and examples (plugin `release.yml`, `package.json` release scripts, bootstrap `0.0.0-alpha` publish, and npm Trusted Publishing configuration), see [docs/publishing.md](./docs/publishing.md).
 
 ## Repository contents
 
