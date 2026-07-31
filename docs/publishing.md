@@ -12,7 +12,7 @@ Plugin repositories should call it instead of copying workflow logic.
 
 ## Plugin repository workflow
 
-In each plugin repository, create `.github/workflows/release.yml`:
+In each plugin repository, create `.github/workflows/publish.yml`:
 
 ```yaml
 name: Release
