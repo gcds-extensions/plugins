@@ -5,6 +5,16 @@ This guide explains how plugin repositories publish npm packages under the `@gcd
 - **Changesets**: best when you want explicit versioning and release notes via checked-in changeset files.
 - **Release Please**: best when you want conventional-commit driven release PRs and automatic tagging/releases.
 
+## Quick reference
+
+| Need | Use | Jump to |
+| --- | --- | --- |
+| Workflow file in your plugin repo | Keep one stable file: `.github/workflows/publish.yml` | [Plugin repository workflow](#plugin-repository-workflow) |
+| Shared reusable workflow (Changesets) | `gcds-extensions/plugins/.github/workflows/publish.yml@v1` | [Shared workflows](#shared-workflows) |
+| Shared reusable workflow (Release Please) | `gcds-extensions/plugins/.github/workflows/publish-release-please.yml@v1` | [Shared workflows](#shared-workflows) |
+| Where publishing command lives | Plugin `package.json` scripts | [Where actual publishing is defined](#where-actual-publishing-is-defined) |
+| Trusted Publishing setup | npm Trusted Publisher config tied to workflow file path | [Trusted Publishing setup (npm)](#trusted-publishing-setup-npm) |
+
 ## Shared workflows
 
 Plugin repositories should call one of these reusable workflows instead of copying workflow logic.
@@ -17,8 +27,11 @@ Plugin repositories should call one of these reusable workflows instead of copyi
 ## Plugin repository workflow
 
 In each plugin repository, create a release workflow that calls one of the shared workflows:
+GitHub markdown does not render tab UI from comment markers, so both variants are shown inline below.
 
 <!-- tab: Changesets -->
+
+### Changesets
 
 Create `.github/workflows/publish.yml`:
 
@@ -51,6 +64,8 @@ jobs:
 ```
 
 <!-- tab: Release Please -->
+
+### Release Please
 
 Create `.github/workflows/publish.yml` (Release Please variant):
 
@@ -88,8 +103,11 @@ jobs:
 ## Where actual publishing is defined
 
 The shared workflow runs your publish script, so each plugin defines release behavior in its own `package.json` scripts.
+As above, both variants are shown inline because GitHub does not render comment-marker tabs.
 
 <!-- tab: Changesets -->
+
+### Changesets
 
 The Changesets workflow runs:
 
@@ -146,6 +164,8 @@ Example `package.json` with overrides:
 ```
 
 <!-- tab: Release Please -->
+
+### Release Please
 
 The Release Please workflow runs:
 
