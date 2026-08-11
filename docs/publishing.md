@@ -6,7 +6,7 @@ This guide explains how plugin repositories publish npm packages under the `@gcd
 
 This repository provides the reusable workflow at:
 
-[`./.github/workflows/publish.yml`](./.github/workflows/publish.yml)
+[`./.github/workflows/publish.yml`](../.github/workflows/publish.yml)
 
 Plugin repositories should call it instead of copying workflow logic.
 
