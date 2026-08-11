@@ -52,7 +52,7 @@ jobs:
 
 <!-- tab: Release Please -->
 
-Create `.github/workflows/publish-release-please.yml`:
+Create `.github/workflows/publish.yml` (Release Please variant):
 
 ```yaml
 name: Release
