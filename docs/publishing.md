@@ -1,18 +1,26 @@
 # Publishing a plugin
 
-This guide explains how plugin repositories publish npm packages under the `@gcds-extensions` scope using the shared GitHub Actions workflow.
+This guide explains how plugin repositories publish npm packages under the `@gcds-extensions` scope using shared GitHub Actions workflows. Two release tools are supported:
 
-## Shared workflow
+- **Changesets**: best when you want explicit versioning and release notes via checked-in changeset files.
+- **Release Please**: best when you want conventional-commit driven release PRs and automatic tagging/releases.
 
-This repository provides the reusable workflow at:
+## Shared workflows
 
-[`./.github/workflows/publish.yml`](../.github/workflows/publish.yml)
+Plugin repositories should call one of these reusable workflows instead of copying workflow logic.
 
-Plugin repositories should call it instead of copying workflow logic.
+| Tool | Reusable workflow |
+| --- | --- |
+| Changesets | [`./.github/workflows/publish.yml`](../.github/workflows/publish.yml) |
+| Release Please | [`./.github/workflows/publish-release-please.yml`](../.github/workflows/publish-release-please.yml) |
 
 ## Plugin repository workflow
 
-In each plugin repository, create `.github/workflows/publish.yml`:
+In each plugin repository, create a release workflow that calls one of the shared workflows:
+
+<!-- tab: Changesets -->
+
+Create `.github/workflows/publish.yml`:
 
 ```yaml
 name: Release
@@ -42,16 +50,53 @@ jobs:
       node-version: "24"
 ```
 
+<!-- tab: Release Please -->
+
+Create `.github/workflows/publish-release-please.yml`:
+
+```yaml
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    uses: gcds-extensions/plugins/.github/workflows/publish-release-please.yml@v1
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    with:
+      node-version: "24"
+      release-type: node
+```
+
+<!-- end tabs -->
+
 ## Where actual publishing is defined
 
-The shared workflow runs:
+The shared workflow runs your publish script, so each plugin defines release behavior in its own `package.json` scripts.
+
+<!-- tab: Changesets -->
+
+The Changesets workflow runs:
 
 ```yaml
 with:
   publish: npm run release
 ```
-
-That means each plugin defines its release behavior in its own `package.json` scripts.
 
 Example `package.json`:
 
@@ -100,6 +145,66 @@ Example `package.json` with overrides:
 }
 ```
 
+<!-- tab: Release Please -->
+
+The Release Please workflow runs:
+
+```yaml
+with:
+  publish: npm run release
+```
+
+Example `package.json`:
+
+```json
+{
+  "name": "@gcds-extensions/code-display",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "your-build-command",
+    "test": "your-test-command",
+    "release": "npm publish --provenance --access public"
+  }
+}
+```
+
+Use `release` for stable by default.
+
+### Publishing overrides (alpha/beta)
+Release Please can still run alternate publish scripts via `publish`, but it does not manage prerelease version progression/tags in the same way as Changesets. Prefer prerelease flows with Changesets when you need structured alpha/beta versioning.
+
+```yaml
+jobs:
+  release:
+    uses: gcds-extensions/plugins/.github/workflows/publish-release-please.yml@v1
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    with:
+      node-version: "24"
+      release-type: node
+      publish: npm run release:alpha  # or release:beta
+```
+
+Example `package.json` with overrides:
+
+```json
+{
+  "name": "@gcds-extensions/code-display",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "your-build-command",
+    "test": "your-test-command",
+    "release": "npm publish --provenance --access public",
+    "release:alpha": "npm publish --provenance --access public --tag alpha",
+    "release:beta": "npm publish --provenance --access public --tag beta"
+  }
+}
+```
+
+<!-- end tabs -->
+
 ## npm access and ownership model
 
 Use least-privilege access:
@@ -131,3 +236,5 @@ Trusted Publishing is configured in npm package settings (not only in YAML):
 4. Save settings.
 
 Once configured, GitHub Actions uses OIDC (`id-token: write`) for publish access and `NPM_TOKEN` is not required.
+
+> Note: In the Release Please shared workflow, the publish job runs from the release tag (`tag_name`) and publishes the tagged commit.
