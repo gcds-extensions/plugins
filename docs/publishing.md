@@ -6,7 +6,7 @@ This guide explains how plugin repositories publish npm packages under the `@gcd
 
 This repository provides the reusable workflow at:
 
-`./.github/workflows/publish.yml`
+[`./.github/workflows/publish.yml`](./.github/workflows/publish.yml)
 
 Plugin repositories should call it instead of copying workflow logic.
 
@@ -58,7 +58,38 @@ Example `package.json`:
 ```json
 {
   "name": "@gcds-extensions/code-display",
-  "version": "0.0.0-alpha",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "your-build-command",
+    "test": "your-test-command",
+    "release": "changeset publish",
+  }
+}
+```
+
+Use `release` for stable by default.
+
+### Publishing overrides (alpha/beta)
+For plugins that need staged releases, override the `publish` input:
+
+```yaml
+jobs:
+  release:
+    uses: gcds-extensions/plugins/.github/workflows/publish.yml@v1
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    with:
+      node-version: "24"
+      publish: npm run release:alpha  # or release:beta
+```
+
+Example `package.json` with overrides:
+```json
+{
+  "name": "@gcds-extensions/code-display",
+  "version": "0.1.0-alpha",
   "scripts": {
     "build": "your-build-command",
     "test": "your-test-command",
@@ -68,8 +99,6 @@ Example `package.json`:
   }
 }
 ```
-
-Use `release` for stable by default. Add `release:alpha` and `release:beta` scripts when staged publishing is needed.
 
 ## npm access and ownership model
 
