@@ -93,10 +93,14 @@ jobs:
       contents: write
       pull-requests: write
       id-token: write
+    secrets:
+      release_token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
     with:
       node-version: "24"
       release-type: node
 ```
+
+> Optional but recommended: set `RELEASE_PLEASE_TOKEN` (typically a fine-grained PAT) and pass it as `release_token` so release PRs opened by Release Please can trigger downstream CI workflows. PRs opened with the default `GITHUB_TOKEN` do not trigger other workflows.
 
 <!-- end tabs -->
 
@@ -104,6 +108,8 @@ jobs:
 
 The shared workflow runs your publish script, so each plugin defines release behavior in its own `package.json` scripts.
 As above, both variants are shown inline because GitHub does not render comment-marker tabs.
+
+> Warning: both variants use a `release` script name, but the script contents are **not** interchangeable. Changesets requires `release` to run `changeset publish`, while Release Please requires a plain `npm publish` command. If you migrate between tools, rewrite the script itself rather than only swapping workflow files.
 
 <!-- tab: Changesets -->
 

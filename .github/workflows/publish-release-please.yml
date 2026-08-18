@@ -15,6 +15,10 @@ on:
         required: false
         type: string
         default: npm run release
+    secrets:
+      release_token:
+        description: Optional token for release-please; falls back to GITHUB_TOKEN when omitted.
+        required: false
 
 permissions:
   contents: write
@@ -31,8 +35,9 @@ jobs:
     steps:
       - name: Create release PR or release
         id: release
-        uses: google-github-actions/release-please-action@v4
+        uses: googleapis/release-please-action@v4
         with:
+          token: ${{ secrets.release_token || secrets.GITHUB_TOKEN }}
           release-type: ${{ inputs.release-type }}
 
   publish:
@@ -69,4 +74,3 @@ jobs:
         run: ${{ inputs.publish }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
