@@ -1,0 +1,76 @@
+name: Publish npm packages (Release Please)
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: "24"
+      release-type:
+        required: false
+        type: string
+        default: "node"
+      publish:
+        required: false
+        type: string
+        default: npm run release
+    secrets:
+      release_token:
+        description: Optional token for release-please; falls back to GITHUB_TOKEN when omitted.
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Create release PR or release
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.release_token || secrets.GITHUB_TOKEN }}
+          release-type: ${{ inputs.release-type }}
+
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: npm test
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Verify package contents
+        run: npm run pack:check --if-present
+
+      - name: Publish package
+        run: ${{ inputs.publish }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
