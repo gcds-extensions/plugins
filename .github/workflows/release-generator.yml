@@ -1,0 +1,78 @@
+name: Release Generator
+
+# Reusable release-generation workflow for @gcds-extensions plugin repositories.
+#
+# Maintains a release PR from conventional commits. Merging it bumps the
+# version, updates CHANGELOG.md and pushes the tag. Publishing is a separate
+# workflow that reacts to the tag — see compile-and-publish.yml.
+#
+# Copy this into your plugin repo as .github/workflows/release-generator.yml:
+#
+#   name: Release Generator
+#   on:
+#     workflow_dispatch:
+#     push:
+#       branches: [main]
+#   permissions:
+#     contents: write
+#     pull-requests: write
+#   jobs:
+#     release:
+#       uses: gcds-extensions/plugins/.github/workflows/release-generator.yml@<sha>
+#       permissions:
+#         contents: write
+#         pull-requests: write
+#       secrets:
+#         release_app_id: ${{ secrets.GCDS_RELEASE_BOT_APP_ID }}
+#         release_app_private_key: ${{ secrets.GCDS_RELEASE_BOT_PRIVATE_KEY }}
+
+on:
+  workflow_call:
+    inputs:
+      release-type:
+        description: release-please versioning strategy.
+        type: string
+        default: node
+      path:
+        description: Path to release from, for monorepos.
+        type: string
+        default: "."
+    secrets:
+      release_app_id:
+        description: >-
+          App ID of the release bot. Required: tags pushed with the default
+          GITHUB_TOKEN do not trigger the publish workflow.
+        required: true
+      release_app_private_key:
+        description: Private key of the release bot.
+        required: true
+    outputs:
+      release_created:
+        description: Set to "true" when this run tagged a release.
+        value: ${{ jobs.release-please.outputs.release_created }}
+      tag_name:
+        description: Tag that was created, empty when no release was created.
+        value: ${{ jobs.release-please.outputs.tag_name }}
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app_token
+        with:
+          app-id: ${{ secrets.release_app_id }}
+          private-key: ${{ secrets.release_app_private_key }}
+
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          token: ${{ steps.app_token.outputs.token }}
+          release-type: ${{ inputs.release-type }}
+          path: ${{ inputs.path }}

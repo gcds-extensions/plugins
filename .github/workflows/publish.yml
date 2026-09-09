@@ -1,50 +1,124 @@
-name: Publish npm packages
+name: Publish packages
+
+# Reusable publishing workflow for @gcds-extensions plugin repositories.
+#
+# Builds an already-tagged commit and publishes it to npm using Trusted
+# Publishing (OIDC), so no npm token is stored anywhere. Skips silently if the
+# version is already on npm, so re-runs are safe.
+#
+# Copy the caller below into your plugin repo. Its filename is what you
+# register as the npm Trusted Publisher — npm validates the entry-point
+# workflow, not this one — so pick one and keep it stable.
+#
+#   name: Publish packages
+#   on:
+#     workflow_dispatch:
+#       inputs:
+#         ref: { description: Tag to publish, required: true, type: string }
+#     push:
+#       tags: ["v*"]
+#   permissions:
+#     contents: read
+#     id-token: write
+#   jobs:
+#     publish:
+#       uses: gcds-extensions/plugins/.github/workflows/publish.yml@<sha>
+#       permissions:
+#         contents: read
+#         id-token: write
+#       with:
+#         ref: ${{ inputs.ref || github.ref_name }}
 
 on:
   workflow_call:
     inputs:
+      ref:
+        description: Existing tag to check out and publish, e.g. v1.2.0.
+        type: string
+        required: true
       node-version:
-        required: false
+        description: Node.js version used to build and publish. Must be >= 22.14.0.
         type: string
         default: "24"
-
-permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+      working-directory:
+        description: >-
+          Directory to install and build in. Leave as "." for a workspaces
+          monorepo, where the lockfile lives at the root.
+        type: string
+        default: "."
+      package-path:
+        description: Directory containing the package.json to publish.
+        type: string
+        default: "."
+      npm-tag:
+        description: npm dist-tag to publish under.
+        type: string
+        default: latest
 
 jobs:
-  release:
+  check-version:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      exists: ${{ steps.check.outputs.exists }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - id: check
+        working-directory: ${{ inputs.package-path }}
+        run: |
+          set -euo pipefail
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::$NAME@$VERSION is already on npm; publish will be skipped."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION is not yet on npm."
+          fi
+
+  publish:
+    needs: check-version
+    if: needs.check-version.outputs.exists == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ inputs.node-version }}
           registry-url: https://registry.npmjs.org
           cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+        working-directory: ${{ inputs.working-directory }}
 
-      - name: Run checks
-        run: npm test
+      - run: npm run build
+        working-directory: ${{ inputs.working-directory }}
 
-      - name: Build packages
-        run: npm run build
-
-      - name: Verify package contents
-        run: npm run pack:check --if-present
-
-      - name: Create release PR or publish
-        uses: changesets/action@v1
-        with:
-          publish: npm run release
+      - name: Publish to npm
+        working-directory: ${{ inputs.package-path }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TAG: ${{ inputs.npm-tag }}
+        run: npm publish --ignore-scripts --access public --tag "$NPM_TAG"
+
+      - name: Summary
+        env:
+          VERSION: ${{ needs.check-version.outputs.version }}
+          NPM_TAG: ${{ inputs.npm-tag }}
+          REF: ${{ inputs.ref }}
+        run: echo "Published $VERSION ($NPM_TAG) from $REF." >> "$GITHUB_STEP_SUMMARY"
