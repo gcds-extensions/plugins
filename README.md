@@ -1,21 +1,27 @@
 # GCDS Plugins
 
-Welcome to the GCDS plugin ecosystem.
+Welcome to the GCDS Extensions plugin ecosystem.
 
-This repository contains the documentation, tooling, and workflows for creating, publishing, and maintaining GCDS plugins.
+This repository holds the shared publishing workflows and documentation for the
+GCDS Extensions plugin ecosystem. Plugins live in their own repositories; this one is what
+they inherit from.
 
-Plugins extend the Government of Canada Design System (GCDS) with optional components that are maintained outside of the core GCDS library. They allow teams to build and distribute additional functionality while following a consistent set of patterns and contribution practices.
+Plugins extend the Government of Canada Design System (GCDS) with optional
+components maintained outside the core library, so teams can build and
+distribute extra functionality without adding weight to GCDS itself.
 
 ## What is a plugin?
 
-A plugin is an optional component that extends GCDS without increasing the size or maintenance burden of the core library.
+A plugin is an optional component that extends GCDS without increasing the size
+or maintenance burden of the core library.
 
 Each plugin:
 
-* Is published as its own npm package.
+* Is published as its own npm package under the `@gcds-extensions` scope.
 * Registers one or more custom elements using the `gcds-ext-*` prefix.
+* Lives in its own repository in the `gcds-extensions` GitHub org.
 * Is maintained by its own owners.
-* Follows the conventions documented in this repository.
+* Releases through the shared workflows in this repository.
 
 For example:
 
@@ -23,29 +29,57 @@ For example:
 | ------------------------------ | ------------------------------- | ------------------------- |
 | `gcds-extensions/code-display` | `@gcds-extensions/code-display` | `<gcds-ext-code-display>` |
 
+## Publishing, at a glance
+
+Releases are driven by [conventional commits](https://www.conventionalcommits.org/)
+and run through two shared workflows:
+
+```
+commit to main ──> release-generator ──> opens a release PR
+                                             │ you merge it
+                                             ▼
+                                  version bumped, CHANGELOG written,
+                                       tag vX.Y.Z created
+                                             │
+                                             ▼
+                                       publish ──> npm
+```
+
+You never set the version by hand, and merging the release PR is what ships the
+package. Your plugin repo holds two small caller files; the logic lives here, so
+a fix here reaches every plugin.
+
+| Workflow | What it does |
+| --- | --- |
+| [`.github/workflows/release-generator.yml`](./.github/workflows/release-generator.yml) | Maintains the release PR, then tags and creates the GitHub release when it is merged |
+| [`.github/workflows/publish.yml`](./.github/workflows/publish.yml) | Builds the tagged commit and publishes it to npm via Trusted Publishing (OIDC) |
+
+Publishing uses npm Trusted Publishing, so no npm tokens are stored in any
+plugin repository.
+
 ## Getting started
 
-Whether you're creating a new plugin or contributing to an existing one, start with:
+Setting up a new plugin for release takes about fifteen minutes and needs a
+GitHub App credential from the GCDS team plus a one-time npm bootstrap publish.
 
-* [Plugin Directory](./plugin-directory.md)
-* Creating a Plugin
-* Plugin Requirements
-* [Publishing a Plugin](./docs/publishing.md)
-* Maintaining a Plugin
+* **[Publishing a plugin](./docs/publishing.md)** — start here. Prerequisites,
+  seven setup steps, day-to-day use, full workflow reference, and troubleshooting.
+* **[Plugin directory](./plugin-directory.md)** — what exists and who maintains it.
 
-## Publishing a plugin
-
-Plugins publish through the shared reusable workflow in this repository. For full setup and examples (plugin `release.yml`, `package.json` release scripts, bootstrap `0.0.0-alpha` publish, and npm Trusted Publishing configuration), see [docs/publishing.md](./docs/publishing.md).
+Not yet written: guides for creating a plugin, plugin requirements, and
+maintaining a plugin. Until they land, the publishing guide is the authoritative
+reference for anything release-related.
 
 ## Repository contents
 
-This repository contains:
-
-* Plugin documentation
-* Publishing workflows
-* Contribution guidance
-* Templates and examples
-* Shared tooling for plugin repositories
+```
+.github/workflows/
+  release-generator.yml   reusable — release PRs, tagging, GitHub releases
+  publish.yml             reusable — build and publish to npm
+docs/
+  publishing.md           how to set up and use the workflows
+plugin-directory.md       the list of plugins and their maintainers
+```
 
 ## Related repositories
 
@@ -56,6 +90,5 @@ Core GCDS packages:
 * `@gcds-core/components-vue`
 * `@gcds-core/components-angular`
 
-> **Note**
->
+> [!IMPORTANT]
 > Not every package published under the `@gcds-extensions` npm scope is a plugin. Some packages provide implementation-specific integrations or other ecosystem functionality and may follow different contribution and maintenance models.

@@ -34,8 +34,9 @@ Three things follow from this shape:
   `CHANGELOG.md` inside the release PR.
 - **Merging the release PR is the release.** That merge is what creates the
   tag, and the tag is what triggers publishing. Nothing else publishes.
-- **Tests do not run in the publish path.** They run on pull requests. By the
-  time a tag exists, the code has already been reviewed and tested.
+- **Tests do not run in the publish path.** They belong on pull requests, so a
+  failure blocks the merge rather than blocking a release after the fact. You
+  supply that workflow — see [step 7](#7-run-your-tests-on-pull-requests).
 
 ## What you will need
 
@@ -46,6 +47,7 @@ Three things follow from this shape:
 | Repo | A committed `package-lock.json` | The workflow uses `npm ci` |
 | Repo | Know where your `package.json` lives | Root needs no extra config; a package in a subdirectory needs `working-directory` and/or `package-path` — see [Publishing from a subdirectory](#publishing-from-a-subdirectory) |
 | Repo | A `build` script | The workflow runs `npm run build` before publishing |
+| Repo | A workflow that runs tests on pull requests | The shared publish workflow does not run tests — see [step 7](#7-run-your-tests-on-pull-requests) |
 | Repo | [Conventional commits](https://www.conventionalcommits.org/) on `main` | `feat:` bumps the minor, `fix:` the patch. Non-conventional commits are ignored for versioning |
 | Secrets | `GCDS_RELEASE_BOT_APP_ID`, `GCDS_RELEASE_BOT_PRIVATE_KEY` | Ask the GCDS team. Required, not optional — see below |
 | npm | The package already exists on npm | Trusted Publishing is configured per package, so a one-time bootstrap publish comes first |
@@ -60,7 +62,26 @@ workflow. Publishing would silently never happen. There is no fallback.
 
 ## Setup
 
-### 1. Add the two caller workflows
+Work through these in order. Step 1 must come before step 2, or pushing the
+anchor tag will fire the publish workflow you just installed.
+
+### 1. Anchor the repository history
+
+If the repo has no tags yet, release-please treats the entire history as
+unreleased and writes a very long first changelog. Create an anchor at the
+current version:
+
+```bash
+git tag v0.0.0 && git push origin v0.0.0
+```
+
+Then create a GitHub release for that tag.
+
+> Do this **before** adding the workflows in step 2. The anchor tag matches the
+> publish workflow's `v*` trigger, so pushing it afterwards starts a publish run
+> for a version you did not intend to release.
+
+### 2. Add the two caller workflows
 
 Create `.github/workflows/release-generator.yml`:
 
@@ -133,31 +154,35 @@ Those two blocks are all a single-package repository needs. If your
 `package.json` is **not** at the repository root, add one or two more inputs
 first — see [Publishing from a subdirectory](#publishing-from-a-subdirectory).
 
-### 2. Pin the shared workflows by SHA
+**Keep `node-version` at `24` or higher.** Trusted Publishing needs npm
+>= 11.5.1, and the shared workflow uses whatever npm ships with the Node you
+ask for. Node 22 still ships npm 10.x, so setting `node-version: "22"` fails at
+the publish step even though Node 22 clears npm's documented Node floor.
 
-Replace `<sha>` in both files with a full commit SHA:
+### 3. Pin the shared workflows by SHA
+
+Replace `<sha>` in both files with a full 40-character commit SHA, keeping the
+version in a trailing comment:
 
 ```bash
 gh api repos/gcds-extensions/plugins/commits/main --jq '.sha'
 ```
 
-Use a full 40-character SHA with the version in a trailing comment:
-
 ```yaml
-uses: gcds-extensions/plugins/.github/workflows/publish.yml@e2fbc1a…8c2 # v1
+uses: gcds-extensions/plugins/.github/workflows/publish.yml@0000000000000000000000000000000000000000 # v1
 ```
 
 A SHA cannot be moved; branch and tag refs can be retargeted by a force-push,
 and these workflows hold publishing rights. Add the `github-actions` ecosystem
 to `.github/dependabot.yml` and Dependabot will keep the pin current.
 
-### 3. Add the repository secrets
+### 4. Add the repository secrets
 
 Add `GCDS_RELEASE_BOT_APP_ID` and `GCDS_RELEASE_BOT_PRIVATE_KEY` to the
 repository, and have the GCDS team install the release bot App on it with
 `contents: write` and `pull requests: write`.
 
-### 4. Bootstrap the package on npm
+### 5. Bootstrap the package on npm
 
 Trusted Publishing is configured per package, so the package must exist first.
 A GCDS team member does this once, locally:
@@ -173,7 +198,15 @@ Then set the version in `package.json` back to a clean `0.0.0` and commit it.
 release-please parses that field; a lingering `-alpha` produces confusing
 version proposals.
 
-### 5. Configure Trusted Publishing
+Check what is already published before your first real release — the version in
+`package.json` must be higher than anything on npm, or `check-version` will skip
+the release as already published:
+
+```bash
+npm view @gcds-extensions/<plugin> versions
+```
+
+### 6. Configure Trusted Publishing
 
 In npm package settings for `@gcds-extensions/<plugin>`:
 
@@ -185,16 +218,42 @@ In npm package settings for `@gcds-extensions/<plugin>`:
 > workflow that runs `npm publish`. Register your own file, never `publish.yml`
 > from this repository. After this, no npm token is needed anywhere.
 
-### 6. Anchor the changelog
+### 7. Run your tests on pull requests
 
-If the repo has no tags yet, release-please treats the entire history as
-unreleased and writes a very long first changelog. Create an empty anchor:
+The shared publish workflow deliberately does not run tests — by the time a tag
+exists the code has already been merged, so a failing test there would block a
+release without preventing the bad merge. Add your own workflow so tests gate
+the pull request instead:
 
-```bash
-git tag v0.0.0 && git push origin v0.0.0
+```yaml
+name: Run Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha> # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@<sha> # v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
 ```
 
-Then create a GitHub release for that tag. Do this before the first run.
+This is also what the release bot App buys you: a release PR opened with the
+default `GITHUB_TOKEN` would not trigger this workflow at all.
 
 ## How to use it day to day
 
@@ -224,8 +283,8 @@ commits. Merge it when you want to cut a release; leave it open otherwise.
    npm whether it is already published. If it is, publishing is skipped and the
    run ends green — re-runs are safe.
 5. `publish` checks out the tag, runs `npm ci` and `npm run build`, then
-   `npm publish --ignore-scripts --access public`. Authentication is OIDC;
-   npm attaches a provenance attestation automatically.
+   `npm publish --ignore-scripts --access public --tag <npm-tag>`.
+   Authentication is OIDC; npm attaches a provenance attestation automatically.
 
 To publish an existing tag manually — for example after fixing a Trusted
 Publisher misconfiguration — run the **Publish packages** workflow from the
@@ -252,7 +311,7 @@ Outputs: `release_created`, `tag_name`.
 | Input | Default | Purpose |
 | --- | --- | --- |
 | `ref` | — (required) | Tag to check out and publish |
-| `node-version` | `24` | Must be >= 22.14.0 for Trusted Publishing |
+| `node-version` | `24` | Keep at 24+. Trusted Publishing needs npm >= 11.5.1, and Node 22 still ships npm 10.x |
 | `working-directory` | `.` | Where `npm ci` and `npm run build` run |
 | `package-path` | `.` | Directory containing the `package.json` to publish |
 | `npm-tag` | `latest` | npm dist-tag, e.g. `alpha`, `beta`, `next` |
@@ -300,7 +359,8 @@ workflows. Confirm the tag exists, then publish it manually via
 
 **`ENEEDAUTH` or 401 on publish.** Usually the wrong workflow filename
 registered with npm (it must be the caller in your repo), a caller missing
-`id-token: write`, or npm older than 11.5.1.
+`id-token: write`, or `node-version` set below 24 (Node 22 ships npm 10.x,
+below the 11.5.1 that Trusted Publishing requires).
 
 **`npm error 403 … cannot publish over previously published version`.** The
 `check-version` guard should prevent this; if you see it, the tag's
@@ -315,4 +375,4 @@ repository root. See [Publishing from a subdirectory](#publishing-from-a-subdire
 **Provenance fails.** `repository.url` in `package.json` must match the GitHub
 repository.
 
-**The first changelog is enormous.** No anchor tag existed. See step 6.
+**The first changelog is enormous.** No anchor tag existed. See step 1.
