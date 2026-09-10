@@ -25,16 +25,30 @@ name: Release Generator
 #       secrets:
 #         release_app_id: ${{ secrets.GCDS_RELEASE_BOT_APP_ID }}
 #         release_app_private_key: ${{ secrets.GCDS_RELEASE_BOT_PRIVATE_KEY }}
+#
+# For manifest mode, add `with: {release-type: ""}` and commit
+# release-please-config.json + .release-please-manifest.json.
 
 on:
   workflow_call:
     inputs:
       release-type:
-        description: release-please versioning strategy.
+        description: >-
+          release-please strategy for simple mode. Set to "" to switch to
+          manifest mode, which reads config-file instead — needed for
+          changelog-sections, bump-minor-pre-major and extra-files.
         type: string
         default: node
+      config-file:
+        description: Manifest-mode config path. Ignored unless release-type is "".
+        type: string
+        default: release-please-config.json
+      manifest-file:
+        description: Manifest-mode version file path. Ignored unless release-type is "".
+        type: string
+        default: .release-please-manifest.json
       path:
-        description: Path to release from, for monorepos.
+        description: Path to release from, for monorepos. Simple mode only.
         type: string
         default: "."
     secrets:
@@ -75,4 +89,6 @@ jobs:
         with:
           token: ${{ steps.app_token.outputs.token }}
           release-type: ${{ inputs.release-type }}
+          config-file: ${{ inputs.config-file }}
+          manifest-file: ${{ inputs.manifest-file }}
           path: ${{ inputs.path }}
