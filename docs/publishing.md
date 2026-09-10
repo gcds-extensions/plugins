@@ -327,6 +327,7 @@ need any of:
 | `bump-patch-for-minor-pre-major` | `false` | `true` makes `feat:` bump the patch while below 1.0.0 |
 | `changelog-sections` | feat/fix/breaking shown | Show `perf:`, `refactor:` or `docs:` in the changelog, or hide types you do not want |
 | `extra-files` | none | Bump the version string in files beyond `package.json` |
+| `include-component-in-tag` | `true` | **Must be `false`.** See the warning below |
 
 To switch, pass an empty `release-type` and commit two files:
 
@@ -341,11 +342,33 @@ To switch, pass an empty `release-type` and commit two files:
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "bump-minor-pre-major": true,
+  "include-component-in-tag": false,
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "refactor", "section": "Refactors", "hidden": true },
+    { "type": "docs", "section": "Documentation", "hidden": true },
+    { "type": "test", "section": "Tests", "hidden": true },
+    { "type": "build", "section": "Build", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true },
+    { "type": "chore", "section": "Miscellaneous", "hidden": true }
+  ],
   "packages": {
     ".": { "release-type": "node" }
   }
 }
 ```
+
+> **`include-component-in-tag: false` is not optional.** Manifest mode defaults
+> to `true`, and with `release-type: node` the component comes from the package
+> name — so tags become `<plugin>-v1.2.0` instead of `v1.2.0`. The publish
+> workflow listens on `v*`, so releases would be created and then never
+> published, with no error anywhere. Simple mode does not have this problem,
+> which is why it only appears once you switch.
+
+Set `hidden: true` on a type to keep it out of the changelog. Types you omit
+entirely are hidden too — list them explicitly so the intent is visible.
 
 `.release-please-manifest.json` — **seed it with the version currently in
 `package.json`**, or release-please computes the next release from the wrong
@@ -409,6 +432,11 @@ the App secrets exist and the App is installed on the repo.
 App token. If the run used `GITHUB_TOKEN`, the tag push does not trigger
 workflows. Confirm the tag exists, then publish it manually via
 `workflow_dispatch`.
+
+**A release was created but the publish workflow never ran.** Check the tag
+name. If it looks like `<plugin>-v1.2.0` rather than `v1.2.0`, you are in
+manifest mode without `include-component-in-tag: false`. Fix the config, then
+publish the existing tag manually via `workflow_dispatch`.
 
 **`ENEEDAUTH` or 401 on publish.** Usually the wrong workflow filename
 registered with npm (it must be the caller in your repo), a caller missing
