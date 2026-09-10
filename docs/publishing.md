@@ -114,7 +114,7 @@ jobs:
       release-type: node
 ```
 
-Create `.github/workflows/compile-and-publish.yml`:
+Create `.github/workflows/publish.yml`:
 
 ```yaml
 name: Publish packages
@@ -211,12 +211,14 @@ npm view @gcds-extensions/<plugin> versions
 In npm package settings for `@gcds-extensions/<plugin>`:
 
 1. Add a Trusted Publisher for GitHub repository `gcds-extensions/<plugin>`.
-2. Workflow filename: **`compile-and-publish.yml`** — filename only, no path.
+2. Workflow filename: **`publish.yml`** — filename only, no path.
 3. Leave environment blank.
 
 > npm validates the **caller** workflow in your plugin repo, not the shared
-> workflow that runs `npm publish`. Register your own file, never `publish.yml`
-> from this repository. After this, no npm token is needed anywhere.
+> workflow that runs `npm publish`. Both are called `publish.yml`, which is
+> deliberate — register the one in *your* repo. npm only stores the filename,
+> not the repo path, so the two never conflict. After this, no npm token is
+> needed anywhere.
 
 ### 7. Run your tests on pull requests
 
@@ -284,7 +286,7 @@ commits. Merge it when you want to cut a release; leave it open otherwise.
 1. You merge the release PR.
 2. That merge is a push to `main`, so `release-generator` runs again, sees the
    merged PR, and creates the tag and GitHub release.
-3. The new tag matches `v*`, which triggers `compile-and-publish`.
+3. The new tag matches `v*`, which triggers your `publish.yml`.
 4. `check-version` reads the version from `package.json` at that tag and asks
    npm whether it is already published. If it is, publishing is skipped and the
    run ends green — re-runs are safe.
