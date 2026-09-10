@@ -263,12 +263,18 @@ Write conventional commits on `main`:
 | --- | --- | --- |
 | `fix: …` | patch (0.1.0 → 0.1.1) | patch |
 | `feat: …` | minor (0.1.0 → 0.2.0) | minor |
-| `feat!: …` or `BREAKING CHANGE:` in the body | minor | major |
+| `feat!: …` or `BREAKING CHANGE:` in the body | **major (0.0.1 → 1.0.0)** | major |
 | `chore: …`, `docs: …`, `ci: …` | no release | no release |
 
 Anything not matching the convention is ignored for versioning and left out of
 the changelog. To force a specific version, put `Release-As: 1.0.0` in a commit
 body.
+
+> **Below 1.0.0, one breaking change ships 1.0.0.** release-please's
+> `bump-minor-pre-major` defaults to `false`, so a `feat!:` at `0.0.1` proposes
+> `1.0.0`, not `0.1.0`. If you are not ready to declare the API stable, switch
+> to manifest mode and set `bump-minor-pre-major: true` — see
+> [Customizing releases](#customizing-releases).
 
 release-please keeps **one** open release PR and rewrites it as you land more
 commits. Merge it when you want to cut a release; leave it open otherwise.
@@ -296,8 +302,10 @@ Actions tab and give it the tag.
 
 | Input | Default | Purpose |
 | --- | --- | --- |
-| `release-type` | `node` | release-please strategy |
-| `path` | `.` | Release from a subdirectory (monorepos) |
+| `release-type` | `node` | release-please strategy. `""` switches to manifest mode |
+| `config-file` | `release-please-config.json` | Manifest mode only |
+| `manifest-file` | `.release-please-manifest.json` | Manifest mode only |
+| `path` | `.` | Release from a subdirectory (monorepos). Simple mode only |
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
@@ -305,6 +313,51 @@ Actions tab and give it the tag.
 | `release_app_private_key` | yes | Release bot private key |
 
 Outputs: `release_created`, `tag_name`.
+
+#### Customizing releases
+
+Simple mode (`release-type: node`) needs no config files and covers most
+plugins. It cannot reach release-please's tuning options, because those live in
+a config file rather than as action inputs. Switch to manifest mode when you
+need any of:
+
+| Option | Default | Why you might change it |
+| --- | --- | --- |
+| `bump-minor-pre-major` | `false` | `true` keeps breaking changes on the minor while below 1.0.0, instead of jumping to 1.0.0 |
+| `bump-patch-for-minor-pre-major` | `false` | `true` makes `feat:` bump the patch while below 1.0.0 |
+| `changelog-sections` | feat/fix/breaking shown | Show `perf:`, `refactor:` or `docs:` in the changelog, or hide types you do not want |
+| `extra-files` | none | Bump the version string in files beyond `package.json` |
+
+To switch, pass an empty `release-type` and commit two files:
+
+```yaml
+    with:
+      release-type: ""
+```
+
+`release-please-config.json`:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bump-minor-pre-major": true,
+  "packages": {
+    ".": { "release-type": "node" }
+  }
+}
+```
+
+`.release-please-manifest.json` — **seed it with the version currently in
+`package.json`**, or release-please computes the next release from the wrong
+baseline:
+
+```json
+{ ".": "0.0.1" }
+```
+
+The two modes are mutually exclusive: whenever `release-type` is non-empty the
+config file is ignored entirely, so a config that appears to do nothing usually
+means `release-type` is still set.
 
 ### `publish.yml`
 
