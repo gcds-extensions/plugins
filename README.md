@@ -52,10 +52,13 @@ a fix here reaches every plugin.
 | Workflow | What it does |
 | --- | --- |
 | [`.github/workflows/release-generator.yml`](./.github/workflows/release-generator.yml) | Maintains the release PR, then tags and creates the GitHub release when it is merged |
-| [`.github/workflows/publish.yml`](./.github/workflows/publish.yml) | Builds the tagged commit and publishes it to npm via Trusted Publishing (OIDC) |
+| [`.github/workflows/publish.yml`](./.github/workflows/publish.yml) | Builds the tagged commit and publishes it to npm via [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) |
 
-Publishing uses npm Trusted Publishing, so no npm tokens are stored in any
+Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers), so no npm tokens are stored in any
 plugin repository.
+
+> [!NOTE]
+> Before Trusted Publishing can be set up, a GCDS team member publishes an empty placeholder version of your package to NPM at `0.0.0`. NPM can only attach a Trusted Publisher to a package that already exists, so this one-time manual publish has to happen first. You don't need to do anything — once it's done, every later release publishes automatically with no NPM token.
 
 ## Getting started
 
