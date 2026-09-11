@@ -17,7 +17,7 @@ or maintenance burden of the core library.
 
 Each plugin:
 
-* Is published as its own npm package under the `@gcds-extensions` scope.
+* Is published as its own NPM package under the `@gcds-extensions` scope.
 * Registers one or more custom elements using the `gcds-ext-*` prefix.
 * Lives in its own repository in the `gcds-extensions` GitHub org.
 * Is maintained by its own owners.
@@ -25,7 +25,7 @@ Each plugin:
 
 For example:
 
-| Repository                     | npm package                     | Custom element            |
+| Repository                     | NPM package                     | Custom element            |
 | ------------------------------ | ------------------------------- | ------------------------- |
 | `gcds-extensions/code-display` | `@gcds-extensions/code-display` | `<gcds-ext-code-display>` |
 
@@ -42,7 +42,7 @@ commit to main ──> release-generator ──> opens a release PR
                                        tag vX.Y.Z created
                                              │
                                              ▼
-                                       publish ──> npm
+                                       publish ──> NPM
 ```
 
 You never set the version by hand, and merging the release PR is what ships the
@@ -52,9 +52,9 @@ a fix here reaches every plugin.
 | Workflow | What it does |
 | --- | --- |
 | [`.github/workflows/release-generator.yml`](./.github/workflows/release-generator.yml) | Maintains the release PR, then tags and creates the GitHub release when it is merged |
-| [`.github/workflows/publish.yml`](./.github/workflows/publish.yml) | Builds the tagged commit and publishes it to npm via [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) |
+| [`.github/workflows/publish.yml`](./.github/workflows/publish.yml) | Builds the tagged commit and publishes it to NPM via [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) |
 
-Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers), so no npm tokens are stored in any
+Publishing uses [NPM Trusted Publishing](https://docs.npmjs.com/trusted-publishers), so no NPM tokens are stored in any
 plugin repository.
 
 > [!NOTE]
@@ -62,8 +62,11 @@ plugin repository.
 
 ## Getting started
 
-Setting up a new plugin for release takes about fifteen minutes and needs a
-GitHub App credential from the GCDS team plus a one-time npm bootstrap publish.
+Setting up a new plugin means copying two workflow files into your repo. On the
+GitHub side a GCDS org owner adds your repo to the release bot App and to its
+two org secrets — no credentials are handed to you. On the NPM side the package
+needs a one-time bootstrap publish and a Trusted Publisher entry, because both
+are configured per package.
 
 * **[Publishing a plugin](./docs/publishing.md)** — start here. Prerequisites,
   seven setup steps, day-to-day use, full workflow reference, and troubleshooting.
@@ -94,4 +97,4 @@ Core GCDS packages:
 * `@gcds-core/components-angular`
 
 > [!IMPORTANT]
-> Not every package published under the `@gcds-extensions` npm scope is a plugin. Some packages provide implementation-specific integrations or other ecosystem functionality and may follow different contribution and maintenance models.
+> Not every package published under the `@gcds-extensions` NPM scope is a plugin. Some packages provide implementation-specific integrations or other ecosystem functionality and may follow different contribution and maintenance models.
