@@ -23,13 +23,34 @@ Each plugin:
 * Is maintained by its own owners.
 * Releases through the shared workflows in this repository.
 
-For example:
+Names follow one pattern throughout:
 
-| Repository                     | NPM package                     | Custom element            |
-| ------------------------------ | ------------------------------- | ------------------------- |
-| `gcds-extensions/code-display` | `@gcds-extensions/code-display` | `<gcds-ext-code-display>` |
+```
+repository        gcds-extensions/<name>
+NPM package       @gcds-extensions/<name>
+custom element    <gcds-ext-<name>>
+```
 
-## Publishing, at a glance
+## Available plugins
+
+| Plugin | NPM package | What it does | Maintainer | Status |
+| --- | --- | --- | --- | --- |
+| **Map** | `@gcds-extensions/map` | _TODO: one line_ | NRCan | Planned |
+| **Code Display** | `@gcds-extensions/code-display` | **Internal.** Built for the GC Design System's own documentation, to render live code examples. Published openly, but not aimed at general use. | GCDS | Planned |
+
+Each plugin's repository and custom element follow the naming pattern above.
+The [plugin directory](./plugin-directory.md) has the status definitions and
+what maintainers are responsible for.
+
+From here, two paths: [already building a plugin](#already-building-a-plugin),
+or [thinking about a new one](#thinking-about-a-new-plugin).
+
+## Already building a plugin
+
+Plugins don't carry release logic of their own — they point at the shared
+workflows in this repository, so a fix made once lands in every plugin.
+
+### How releases work
 
 Releases are driven by [conventional commits](https://www.conventionalcommits.org/)
 and run through two shared workflows:
@@ -46,8 +67,7 @@ commit to main ──> release-generator ──> opens a release PR
 ```
 
 You never set the version by hand, and merging the release PR is what ships the
-package. Your plugin repo holds two small caller files; the logic lives here, so
-a fix here reaches every plugin.
+package.
 
 | Workflow | What it does |
 | --- | --- |
@@ -60,21 +80,38 @@ plugin repository.
 > [!NOTE]
 > Before Trusted Publishing can be set up, a GCDS team member publishes an empty placeholder version of your package to NPM at `0.0.0`. NPM can only attach a Trusted Publisher to a package that already exists, so this one-time manual publish has to happen first. You don't need to do anything — once it's done, every later release publishes automatically with no NPM token.
 
-## Getting started
+### Setting it up
 
-Setting up a new plugin means copying two workflow files into your repo. On the
-GitHub side a GCDS org owner adds your repo to the release bot App and to its
-two org secrets — no credentials are handed to you. On the NPM side the package
-needs a one-time bootstrap publish and a Trusted Publisher entry, because both
-are configured per package.
+Copy two workflow files into your repo. On the GitHub side a GCDS org owner
+adds your repo to the release bot App and to its two org secrets — no
+credentials are handed to you. On the NPM side the package needs a one-time
+bootstrap publish and a Trusted Publisher entry, because both are configured
+per package.
 
 * **[Publishing a plugin](./docs/publishing.md)** — start here. Prerequisites,
   seven setup steps, day-to-day use, full workflow reference, and troubleshooting.
 * **[Plugin directory](./plugin-directory.md)** — what exists and who maintains it.
 
-Not yet written: guides for creating a plugin, plugin requirements, and
-maintaining a plugin. Until they land, the publishing guide is the authoritative
-reference for anything release-related.
+Written guides for plugin requirements and ongoing maintenance are still to
+come. Until they land the team walks you through those directly, and the
+publishing guide is the authoritative reference for anything release-related.
+
+## Thinking about a new plugin
+
+Plugins are not self-serve. Every plugin is published under the
+`@gcds-extensions` scope and carries the design system's name, so we agree on
+scope and ownership before a repository exists. An unmaintained plugin is worse
+for teams than no plugin at all.
+
+Get in touch when you have:
+
+* a specific plugin in mind, and
+* approval from your department to own and maintain it long term
+
+**[Contact the GC Design System team](https://design-system.canada.ca/en/contact/)**
+and tell us what you are proposing. We will work through scope, naming, and
+repository setup with you, and take care of the org-level pieces — the release
+bot, the NPM scope, and Trusted Publishing.
 
 ## Repository contents
 
