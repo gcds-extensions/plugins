@@ -1,8 +1,13 @@
 # Publishing a plugin
 
-Every `@gcds-extensions/*` plugin releases through two shared workflows hosted
-in this repository. Your plugin repo holds two small caller files; the logic
-lives here, so a fix here reaches every plugin.
+Every `@gcds-extensions/*` plugin releases through shared workflows hosted in
+this repository. Your plugin repo creates two small caller workflow files that
+point at that shared logic, so a fix here reaches every plugin while each repo
+can customize its own workflow inputs and package settings.
+
+Key idea: the reusable release logic is inherited from this repo, but the plugin
+repo still owns its local workflow files and can adjust the inputs for its own
+package and repository layout.
 
 - [What to expect](#what-to-expect)
 - [What you will need](#what-you-will-need)

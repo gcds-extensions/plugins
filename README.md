@@ -3,12 +3,19 @@
 Welcome to the GCDS Extensions plugin ecosystem.
 
 This repository holds the shared publishing workflows and documentation for the
-GCDS Extensions plugin ecosystem. Plugins live in their own repositories; this one is what
-they inherit from.
+GCDS Extensions plugin ecosystem. Plugins live in their own repositories and create
+small workflow files that call into these shared workflows, so the release logic is
+centralized while each repo can still customize its own package and workflow settings.
 
 Plugins extend the Government of Canada Design System (GCDS) with optional
 components maintained outside the core library, so teams can build and
 distribute extra functionality without adding weight to GCDS itself.
+
+## What is this repository?
+
+This repository holds the shared publishing workflows and documentation for the
+GCDS Extensions plugin ecosystem. Plugins live in their own repositories, but
+share the reusable release logic and conventions defined here.
 
 ## What is a plugin?
 
@@ -31,6 +38,11 @@ NPM package       @gcds-extensions/<name>
 custom element    <gcds-ext-<name>>
 ```
 
+## Plugin directory
+
+The [plugin directory](./plugin-directory.md) has the status definitions and what
+maintainers are responsible for.
+
 ## Available plugins
 
 | Plugin | NPM package | What it does | Maintainer | Status |
@@ -39,16 +51,13 @@ custom element    <gcds-ext-<name>>
 | **Code Display** | `@gcds-extensions/code-display` | **Internal.** Built for the GC Design System's own documentation, to render live code examples. Published openly, but not aimed at general use. | GCDS | Planned |
 
 Each plugin's repository and custom element follow the naming pattern above.
-The [plugin directory](./plugin-directory.md) has the status definitions and
-what maintainers are responsible for.
 
 From here, two paths: [already building a plugin](#already-building-a-plugin),
 or [thinking about a new one](#thinking-about-a-new-plugin).
 
-## Already building a plugin
+## Already building a plugin?
 
-Plugins don't carry release logic of their own — they point at the shared
-workflows in this repository, so a fix made once lands in every plugin.
+Plugins use shared publishing workflows from this repository rather than maintaining their own release logic. Each plugin calls these reusable workflows through a small set of workflow files, providing creators and maintainers with a simple, consistent publishing process while still allowing plugin-specific configuration.
 
 ### How releases work
 
@@ -82,26 +91,23 @@ plugin repository.
 
 ### Setting it up
 
-Copy two workflow files into your repo. On the GitHub side a GCDS org owner
-adds your repo to the release bot App and to its two org secrets — no
+Create and customize two workflow files in your repo. On the GitHub side a GCDS
+org owner adds your repo to the release bot App and to its two org secrets — no
 credentials are handed to you. On the NPM side the package needs a one-time
 bootstrap publish and a Trusted Publisher entry, because both are configured
 per package.
 
 * **[Publishing a plugin](./docs/publishing.md)** — start here. Prerequisites,
-  seven setup steps, day-to-day use, full workflow reference, and troubleshooting.
+  setup steps, day-to-day use, full workflow reference, and troubleshooting.
 * **[Plugin directory](./plugin-directory.md)** — what exists and who maintains it.
 
 Written guides for plugin requirements and ongoing maintenance are still to
 come. Until they land the team walks you through those directly, and the
 publishing guide is the authoritative reference for anything release-related.
 
-## Thinking about a new plugin
+## Thinking about a new plugin?
 
-Plugins are not self-serve. Every plugin is published under the
-`@gcds-extensions` scope and carries the design system's name, so we agree on
-scope and ownership before a repository exists. An unmaintained plugin is worse
-for teams than no plugin at all.
+Plugins follow a collaborative onboarding process and cannot be created or published independently. Because every plugin is published under the @gcds-extensions scope and carries the design system’s name, we align on its scope and ongoing ownership before creating the repository. This helps keep each plugin reliable and well maintained for the teams that depend on it.
 
 Get in touch when you have:
 
