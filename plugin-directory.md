@@ -8,7 +8,7 @@ Plugins are optional components that extend GCDS. Each plugin is independently v
 
 | Plugin       | Repository                     | npm package                     | Custom element            | Maintainer | Status  |
 | ------------ | ------------------------------ | ------------------------------- | ------------------------- | ---------- | ------- |
-| Code Display | `gcds-extensions/code-display` | `@gcds-extensions/code-display` | `<gcds-ext-code-display>` | GCDS       | Planned |
+| Code Display | `gcds-extensions/code-display` | `@gcds-extensions/code-display` | `<gcds-ext-code-display>` | GCDS       | Active |
 | Map          | *gcds-extensions/map*          | `@gcds-extensions/map`          | `<gcds-ext-map>`          | NRCAN      | Planned |
 
 ## Plugin lifecycle
